@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Client {
-    private String clientId;
+    private String id;
     private String name;
 }

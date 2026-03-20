@@ -65,7 +65,7 @@ public class TransferService {
                 throw new ApiException(ErrorCode.ERROR_INVALID_TRANSFER);
             }
 
-            if (!accountService.haveEnoughAmount(transfer.getOrigin().getClient().getClientId(), transfer.getOrigin().getAccount().getId())) {
+            if (!accountService.haveEnoughAmount(transfer.getOrigin().getClient().getId(), transfer.getOrigin().getAccount().getId())) {
                 log.error("Insufficient funds");
                 transfer.setFailedReason("Insufficient funds");
                 throw new ApiException(ErrorCode.CLIENT_NOT_HAVE_ENOUGH_AMOUNT);
@@ -136,10 +136,10 @@ public class TransferService {
             }
 
             AccountType.getName(transfer.getOrigin().getAccount().getType());
-            validateAccount(transfer.getOrigin().getClient().getClientId(), transfer.getOrigin().getAccount().getId());
+            validateAccount(transfer.getOrigin().getClient().getId(), transfer.getOrigin().getAccount().getId());
 
             AccountType.getName(transfer.getDestination().getAccount().getType());
-            validateAccount(transfer.getDestination().getClient().getClientId(), transfer.getDestination().getAccount().getId());
+            validateAccount(transfer.getDestination().getClient().getId(), transfer.getDestination().getAccount().getId());
 
             if (type.equals(TransferType.MI))
                 if (transfer.getAdditionalInfo() == null || transfer.getAdditionalInfo().isEmpty() || !Boolean.TRUE.equals(transfer.getAdditionalInfo().get("admin"))) {
@@ -177,7 +177,7 @@ public class TransferService {
                     transfer.setStatus(TransferStatus.REJECTED.getName());
                     transfer.setStatusDetail(TransferStatusDetails.REJECTED.getName());
                     transfer.setFailedReason("Error validating");
-                } else if (!accountService.debitAmount(transfer.getOrigin().getClient().getClientId(), transfer.getOrigin().getAccount().getId(), transfer.getAmount())) {
+                } else if (!accountService.debitAmount(transfer.getOrigin().getClient().getId(), transfer.getOrigin().getAccount().getId(), transfer.getAmount())) {
                     transfer.setStatus(TransferStatus.REJECTED.getName());
                     transfer.setStatusDetail(TransferStatusDetails.REJECTED.getName());
                     transfer.setFailedReason("Not is possible debit the amount");
@@ -207,7 +207,7 @@ public class TransferService {
             if (valueStorageService.getIdempotency(transfer.getId()).isEmpty()) {
                 validateTransfer(transfer);
 
-                if (accountService.creditAmount(transfer.getDestination().getClient().getClientId(), transfer.getDestination().getAccount().getId(), transfer.getAmount())) {
+                if (accountService.creditAmount(transfer.getDestination().getClient().getId(), transfer.getDestination().getAccount().getId(), transfer.getAmount())) {
                     transfer.setStatus(TransferStatus.APPROVED.getName());
                     transfer.setStatusDetail(TransferStatusDetails.APPROVED.getName());
                 }
@@ -231,16 +231,18 @@ public class TransferService {
         transfer.setStatusDetail(TransferStatusDetails.PENDING.getName());
         transfer.setFailedReason(null);
         transfer.getAdditionalInfo().put("admin", true);
+        String tempId = transfer.getId();
 
         TransactionDbEntity db = null;
         try {
+            transfer.setId(null);
             db = transactionRepository.save(mapper.dtoToEntity(transfer));
         } catch (Exception e) {
+            log.warn(tempId);
             log.error("Error publishing in DB{}", e.getMessage(), e);
             throw new ApiException(ErrorCode.ERROR_PUBLISHING_DATABASE);
         }
         transfer.setId(String.format("MI-%s", db.getId()));
-
         queueService.publish(transfer, QueueClient.TRANSFER_INTENT_QUEUE);
     }
 

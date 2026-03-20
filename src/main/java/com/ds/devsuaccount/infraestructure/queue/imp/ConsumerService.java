@@ -31,8 +31,8 @@ public class ConsumerService {
     public void listenNews(EventMessage<Transfer> event) {
         try {
             log.info("Processing news event: {}", event);
+            Thread.sleep(1000);
             transferService.processStatusUpdate(event.getPayload());
-
         } catch (Exception e) {
             log.error("Critical error processing event {}. Message will be skipped.", event.getEventId(), e);
         }
