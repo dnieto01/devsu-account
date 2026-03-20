@@ -1,7 +1,7 @@
 package com.ds.devsuaccount.infraestructure.queue;
 
-import com.ds.devsuuser.infraestructure.exceptions.ApiException;
-import com.ds.devsuuser.infraestructure.exceptions.ErrorCode;
+import com.ds.devsuaccount.infraestructure.exceptions.ApiException;
+import com.ds.devsuaccount.infraestructure.exceptions.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;

@@ -2,7 +2,9 @@ package com.ds.devsuaccount.infraestructure.queue;
 
 public enum QueueClient {
 
-    TRANSFER_INTENT_QUEUE("transaction-intent");
+    TRANSFER_INTENT_QUEUE("transaction-intent"),
+    NEWS("news"),
+    ;
 
     private final String topic;
 

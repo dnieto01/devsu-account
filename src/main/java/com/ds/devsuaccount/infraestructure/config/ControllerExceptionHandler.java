@@ -1,7 +1,7 @@
 package com.ds.devsuaccount.infraestructure.config;
 
-import com.ds.devsuuser.infraestructure.exceptions.ApiErrorResponse;
-import com.ds.devsuuser.infraestructure.exceptions.ApiException;
+import com.ds.devsuaccount.infraestructure.exceptions.ApiErrorResponse;
+import com.ds.devsuaccount.infraestructure.exceptions.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

@@ -1,11 +1,11 @@
 package com.ds.devsuaccount.infraestructure.queue.imp;
 
-import com.ds.devsuuser.infraestructure.exceptions.ApiException;
-import com.ds.devsuuser.infraestructure.exceptions.ErrorCode;
-import com.ds.devsuuser.infraestructure.queue.IQueueService;
-import com.ds.devsuuser.infraestructure.queue.QueueClient;
-import com.ds.devsuuser.infraestructure.queue.QueueUtils;
-import com.ds.devsuuser.infraestructure.queue.dto.EventMessage;
+import com.ds.devsuaccount.infraestructure.exceptions.ApiException;
+import com.ds.devsuaccount.infraestructure.exceptions.ErrorCode;
+import com.ds.devsuaccount.infraestructure.queue.IQueueService;
+import com.ds.devsuaccount.infraestructure.queue.QueueClient;
+import com.ds.devsuaccount.infraestructure.queue.QueueUtils;
+import com.ds.devsuaccount.infraestructure.queue.dto.EventMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
