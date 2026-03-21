@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 
 @Component
 @Slf4j
-@Profile("!local")
+@Profile("!local & !test")
 public class LockService implements ILockService {
 
     private final Jedis jedis;
@@ -23,11 +23,8 @@ public class LockService implements ILockService {
 
     private final ConcurrentMap<String, String> localLocks = new ConcurrentHashMap<>();
 
-    public LockService(
-            @Value("${redis.host}") String redisHost,
-            @Value("${redis.port}") int redisPort,
-            @Value("${lock.ttl-millis}") long ttlMillis) {
-        this.jedis = new Jedis(redisHost, redisPort);
+    public LockService(Jedis jedis, @Value("${lock.ttl-millis}") long ttlMillis) {
+        this.jedis = jedis;
         this.ttlSeconds = (int) (ttlMillis / 1000);
     }
 

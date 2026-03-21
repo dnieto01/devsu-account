@@ -17,7 +17,6 @@ import com.ds.devsuaccount.infraestructure.queue.IQueueService;
 import com.ds.devsuaccount.infraestructure.queue.QueueClient;
 import com.ds.devsuaccount.infraestructure.utils.DateUtils;
 import com.ds.devsuaccount.infraestructure.valuestorage.IValueStorageService;
-import com.ds.devsuaccount.infraestructure.valuestorage.repository.IdempotencyRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,8 +43,6 @@ public class TransferService {
     private IValueStorageService valueStorageService;
 
     private final TransactionMapper mapper;
-    @Autowired
-    private IdempotencyRepository idempotencyRepository;
 
     public TransferService(TransactionMapper mapper) {
         this.mapper = mapper;
@@ -65,21 +62,30 @@ public class TransferService {
                 throw new ApiException(ErrorCode.ERROR_INVALID_TRANSFER);
             }
 
-            if (!accountService.haveEnoughAmount(transfer.getOrigin().getClient().getId(), transfer.getOrigin().getAccount().getId())) {
+            if (!accountService.haveEnoughAmount(
+                    transfer.getOrigin().getClient().getId(),
+                    transfer.getOrigin().getAccount().getId(),
+                    transfer.getAmount())) {
                 log.error("Insufficient funds");
                 transfer.setFailedReason("Insufficient funds");
                 throw new ApiException(ErrorCode.CLIENT_NOT_HAVE_ENOUGH_AMOUNT);
             }
         } catch (ApiException e) {
-            return ResponseDto.builder().response(publishMo(transfer)).code(400).build();
+            transfer.setStatus(TransferStatus.REJECTED.getName());
+            transfer.setStatusDetail(TransferStatusDetails.REJECTED.getName());
+            return ResponseDto.builder().response(publishMo(transfer)).code(e.getStatusCode()).build();
         }
 
         return ResponseDto.builder().response(publishMo(transfer)).code(201).build();
     }
 
     private Transfer publishMo(Transfer transfer) {
-        transfer.setStatus(TransferStatus.CREATED.getName());
-        transfer.setStatusDetail(TransferStatusDetails.PENDING.getName());
+        if (transfer.getStatus() == null) {
+            transfer.setStatus(TransferStatus.CREATED.getName());
+        }
+        if (transfer.getStatusDetail() == null) {
+            transfer.setStatusDetail(TransferStatusDetails.PENDING.getName());
+        }
         TransactionDbEntity db = null;
         try {
             db = transactionRepository.save(mapper.dtoToEntity(transfer));
@@ -171,7 +177,7 @@ public class TransferService {
         boolean lock = false;
         try {
             lock = lockService.acquireLock(key);
-            if (valueStorageService.getIdempotency(transfer.getId()).isEmpty()) {
+            if (valueStorageService.getIdempotency(key).isEmpty()) {
                 TransferValidateDto isValid = (TransferValidateDto) validateTransfer(transfer).getResponse();
                 if (!isValid.getIsValid()) {
                     transfer.setStatus(TransferStatus.REJECTED.getName());
@@ -204,16 +210,25 @@ public class TransferService {
         boolean lock = false;
         try {
             lock = lockService.acquireLock(key);
-            if (valueStorageService.getIdempotency(transfer.getId()).isEmpty()) {
-                validateTransfer(transfer);
+            if (valueStorageService.getIdempotency(key).isEmpty()) {
+                TransferValidateDto isValid = (TransferValidateDto) validateTransfer(transfer).getResponse();
 
-                if (accountService.creditAmount(transfer.getDestination().getClient().getId(), transfer.getDestination().getAccount().getId(), transfer.getAmount())) {
+                if (!isValid.getIsValid()) {
+                    transfer.setStatus(TransferStatus.REJECTED.getName());
+                    transfer.setStatusDetail(TransferStatusDetails.REJECTED.getName());
+                    transfer.setFailedReason("Error validating");
+                } else if (accountService.creditAmount(transfer.getDestination().getClient().getId(), transfer.getDestination().getAccount().getId(), transfer.getAmount())) {
                     transfer.setStatus(TransferStatus.APPROVED.getName());
                     transfer.setStatusDetail(TransferStatusDetails.APPROVED.getName());
+                } else {
+                    transfer.setStatus(TransferStatus.REJECTED.getName());
+                    transfer.setStatusDetail(TransferStatusDetails.REJECTED.getName());
+                    transfer.setFailedReason("Not is possible credit the amount");
                 }
 
                 valueStorageService.saveTransfer(transfer);
                 queueService.publish(transfer, QueueClient.NEWS);
+                valueStorageService.saveIdempotency(key, transfer);
 
             } else {
                 log.info("Transfer has been processed before");
@@ -252,14 +267,14 @@ public class TransferService {
         boolean lock = false;
         try {
             lock = lockService.acquireLock(key);
-            UpdateStatusTransaction(transfer);
+            updateStatusTransaction(transfer);
         } finally {
             if (lock)
                 lockService.releaseLock(key);
         }
     }
 
-    private void UpdateStatusTransaction(Transfer transfer) {
+    private void updateStatusTransaction(Transfer transfer) {
         TransferType type = TransferType.getName(transfer.getType());
         TransactionDbEntity transaction = null;
 

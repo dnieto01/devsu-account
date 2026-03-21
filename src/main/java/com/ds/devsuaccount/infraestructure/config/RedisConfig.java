@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Profile;
 import redis.clients.jedis.Jedis;
 
 @Configuration
-@Profile("!local")
+@Profile("!local & !test")
 public class RedisConfig {
 
     @Value("${redis.host}")

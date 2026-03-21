@@ -28,6 +28,10 @@ public enum ErrorCode {
     CLIENT_NOT_HAVE_ENOUGH_AMOUNT(407, "Saldo no disponible.", 200),
     //The client does not have sufficient funds in this account
 
+    ACCOUNT_NOT_FOUND(415, "Account not found", 404),
+    DUPLICATE_ACCOUNT_NUMBER(416, "Account number already exists", 409),
+    ACCOUNT_INACTIVE(417, "Account is not active", 400),
+
 
     ;
 

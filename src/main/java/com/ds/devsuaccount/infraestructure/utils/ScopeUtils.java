@@ -12,6 +12,8 @@ public class ScopeUtils {
 
     public static final String TEST_SUFFIX = "test";
 
+    public static final String PROD_SCOPE = "prod";
+
     private ScopeUtils() {
     }
 
@@ -44,13 +46,23 @@ public class ScopeUtils {
     }
 
     private static String getValidScope(String currentScope) {
-        if (currentScope.equalsIgnoreCase(LOCAL_SCOPE))
-            return currentScope;
+        if (!StringUtils.hasLength(currentScope)) {
+            return LOCAL_SCOPE;
+        }
+        String trimmed = currentScope.trim();
 
-        if (currentScope.equalsIgnoreCase("test"))
-            return TEST_SUFFIX;
+        if (trimmed.equalsIgnoreCase(LOCAL_SCOPE)
+                || trimmed.equalsIgnoreCase(TEST_SUFFIX)
+                || trimmed.equalsIgnoreCase(PROD_SCOPE)
+                || trimmed.equalsIgnoreCase("dev")) {
+            return trimmed.toLowerCase();
+        }
 
-        return LOCAL_SCOPE;
+        if (trimmed.contains("-")) {
+            return trimmed;
+        }
+
+        return trimmed.toLowerCase();
     }
 
 }

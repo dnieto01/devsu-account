@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 
 @Component
 @Slf4j
-@Profile("local")
+@Profile({"local", "test"})
 public class LockServiceLocal implements ILockService {
 
     private final ConcurrentMap<String, String> localLocks = new ConcurrentHashMap<>();
